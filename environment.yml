@@ -1,4 +1,4 @@
-name: diffae
+name: diffex
 channels:
   - conda-forge
   - defaults
