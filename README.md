@@ -41,6 +41,9 @@ Go back to the parent directory
 cd ..
 ```
 
+Modifications in training steps, name of the model, etc can be made in the `run_bbc.py`, `templates.py`, and `config.py` (for all the hyperparameters). `templates.py` calls the `TrainConfig` class from `config.py` and overrides certain variables. `run_bbc.py` calls the `bbc_autoenc()` configuration and can further override.
+
+
 Run Diff-Ex training on BBBC021 dataset.
 
 ```
@@ -64,7 +67,6 @@ I have made changes in the following files:
 - `model/unet_autoenc.py`
 - `diffusion/base.py`
 - `templates.py`
-- `run_bbc.py`
 
 NOTE: For running baseline DiffAE (no classifier component), I would suggest to do it on a separate repository altogether instead of using the same repo for both Diff-Ex and DiffAE.
 
