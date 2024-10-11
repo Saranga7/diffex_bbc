@@ -16,6 +16,7 @@ from multiprocessing import get_context
 import os
 from torch.utils.data.distributed import DistributedSampler
 
+# saranga: modify this when adapting to new dataset
 data_paths = {
     'ffhqlmdb256':
     os.path.expanduser('/projects/deepdevpath2/Saranga/DiffaeCLR/datasets/ffhq256.lmdb'),
@@ -151,6 +152,8 @@ class TrainConfig(BaseConfig):
     include_classifier: bool = True
     classifier_loss_start_step = 0
     classifier_loss = 'KLDiv'
+    annealing_steps = 10_000 # saranga: number of training steps (data samples) to anneal the classifier loss
+    cls_weight = 0.1 # saranga: weight of the classifier loss
     # saranga: the path to the classifier model, however in the current implementation, I am not able to pass it to the necessary place. 
     # so, I define it again in unet_autoenc.py, Ideally, it should be just defined here.
     classifier_path = '/projects/deepdevpath2/Saranga/diffae_BIO/Classifier/classifier_saved_models/BBC_classifier.pth'
@@ -271,6 +274,7 @@ class TrainConfig(BaseConfig):
         # latent can have different eval T
         return self._make_latent_diffusion_conf(T=self.latent_T_eval)
 
+    # saranga:modify this when adapting to new dataset
     def make_dataset(self, path=None, split = None):
         # saranga: BBC dataset
         if self.data_name == 'bbc021_simple':

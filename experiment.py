@@ -466,9 +466,9 @@ class LitModel(pl.LightningModule):
 
                     if self.conf.classifier_loss == 'L2Norm':
                         l2_norm_loss = self._calculate_L2_norm(x_start)
-                        annealing_steps = 250_000  # Define over how many steps to anneal
+                        annealing_steps = self.conf.annealing_steps  # Define over how many steps to anneal
                         annealing_weight = min(1, (self.num_samples - self.conf.classifier_loss_start_step) / annealing_steps)
-                        weight = 0.3 * annealing_weight  # Max weight of 0.1
+                        weight = self.conf.cls_weight * annealing_weight  # Max weight that will be reached at the end of the annealing steps, for the KL Loss
                         wandb.log({"L2Norm_weight": weight}, step = self.num_samples)
 
                         total_loss = loss + weight * l2_norm_loss
@@ -479,9 +479,9 @@ class LitModel(pl.LightningModule):
                     # saranga: KL Divergence loss
                     elif self.conf.classifier_loss == 'KLDiv':
                         kl_div_loss = self._calculate_KL(x_start)  # Assume _calculate_KL calculates your KL divergence
-                        annealing_steps = 250_000  # Define over how many steps to anneal
+                        annealing_steps = self.conf.annealing_steps # over how many steps to anneal
                         annealing_weight = min(1, (self.num_samples - self.conf.classifier_loss_start_step) / annealing_steps)
-                        weight = 0.3 * annealing_weight  # Max weight of 0.3
+                        weight = self.conf.cls_weight * annealing_weight  # Max weight that will be reached at the end of the annealing steps, for the KL Loss
                         wandb.log({"KLDiv_weight": weight}, step = self.num_samples)
 
                         total_loss = (1 - weight) * loss + weight * kl_div_loss

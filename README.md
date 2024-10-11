@@ -30,6 +30,11 @@ python classifier_training.py
 
 After training is complete, you will have the weights for your classifier inside the directory `classifier_saved_models/`
 
+<br>
+
+NOTE:
+
+If you are adapting this framework for another dataset, you will need to make changes in the `Classifier/dataset.py` script and optionally (if you change the name of the Dataset class, or the logic behind splitting it into train and test sets) in `Classifier/classifier_training.py`. 
 
 
 
@@ -41,7 +46,10 @@ Go back to the parent directory
 cd ..
 ```
 
-Modifications in training steps, name of the model, etc can be made in the `run_bbc.py`, `templates.py`, and `config.py` (for all the hyperparameters). `templates.py` calls the `TrainConfig` class from `config.py` and overrides certain variables. `run_bbc.py` calls the `bbc_autoenc()` configuration and can further override.
+Modifications in training steps, name of the model, triggering classifier loss, number of annealing steps, weight of classifier loss, etc. can be made in the `run_bbc.py`, `templates.py`, and `config.py` (for all the hyperparameters). `templates.py` calls the `TrainConfig` class from `config.py` and overrides certain variables. `run_bbc.py` calls the `bbc_autoenc()` configuration and can further override.
+
+
+Mandatorily, the path of the trained classifier weight has to be assigned to `classifier_path` in `config.py` and also to `classifier_path` inside the `BeatGANsAutoencModel` class that is located in `model/unet_autoenc.py`.
 
 
 Run Diff-Ex training on BBBC021 dataset.
@@ -53,10 +61,17 @@ python run_bbc.py
 
 After the training is complete, you will find the weights of the the Diff-Ex model inside the directory, `checkpoints`
 
+<br>
+
+NOTE:
+
+If you are adapting this framework for another dataset, you will need to make changes in the `dataset.py` script and in `config.py` (in the `make_dataset` method, and `data_paths`). 
+
+
 
 ## Changes made w.r.t DiffAE
 
-All the comments that I have made start with "saranga", so you can Ctrl + F and type "saranga" to see the changes that I have made.
+All the comments that I have made start with "saranga", so you can Ctrl + F and type "saranga" to see the changes that I have made w.r.t the DiffAE code.
 
 I have made changes in the following files:
 
