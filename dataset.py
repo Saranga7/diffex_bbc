@@ -27,7 +27,7 @@ class BBCDataset(Dataset):
    
         # Image transformation
         transform = [
-            transforms.Resize(img_size),
+           transforms.Resize((img_size, img_size)),
         ]
 
         if do_augment:

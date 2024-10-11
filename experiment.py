@@ -381,7 +381,7 @@ class LitModel(pl.LightningModule):
     
     # saranga: KL Diverence loss between the classifier output of the original image and the generated image
     def _calculate_KL(self, x_start, mode = 'non_ema'):
-        classifier_op_original = self.model.classifier_component.mobile_net(x_start)
+        classifier_op_original = self.model.classifier_component.classifier(x_start)
         classifier_op_original_prob = torch.softmax(classifier_op_original, dim = 1) 
 
         # Generate image
@@ -390,7 +390,7 @@ class LitModel(pl.LightningModule):
         xT = self.encode_stochastic(x_start, cond, mode = mode)
         generated_image = self.render(xT, cond, mode = mode)
 
-        classifier_op_generated = self.model.classifier_component.mobile_net(generated_image)
+        classifier_op_generated = self.model.classifier_component.classifier(generated_image)
         classifier_op_generated_log_prob = torch.log_softmax(classifier_op_generated, dim = 1)  # Convert to log probabilities
 
         # KL Divergence between original image classifier output vs generated image classifier output

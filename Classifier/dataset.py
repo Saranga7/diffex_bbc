@@ -34,7 +34,7 @@ class BBC_dataset(Dataset):
 
         # Image transformation
         self.transform = transforms.Compose([
-            # transforms.Resize(img_size),
+            # transforms.Resize((img_size, img_size)),
             # transforms.CenterCrop(224),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) 

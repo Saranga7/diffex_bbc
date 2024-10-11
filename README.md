@@ -51,6 +51,8 @@ Modifications in training steps, name of the model, triggering classifier loss, 
 
 Mandatorily, the path of the trained classifier weight has to be assigned to `classifier_path` in `config.py` and also to `classifier_path` inside the `BeatGANsAutoencModel` class that is located in `model/unet_autoenc.py`.
 
+Also change the `wandb` project name and entity, and login credentials to your own wandb account. This is done in `experiment.py`.
+
 
 Run Diff-Ex training on BBBC021 dataset.
 
