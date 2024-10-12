@@ -391,10 +391,10 @@ class LitModel(pl.LightningModule):
         generated_image = self.render(xT, cond, mode = mode)
 
         classifier_op_generated = self.model.classifier_component.classifier(generated_image)
-        classifier_op_generated_log_prob = torch.log_softmax(classifier_op_generated, dim = 1)  # Convert to log probabilities
+        classifier_op_generated_log_prob = F.log_softmax(classifier_op_generated, dim = 1)  # Convert to log probabilities
 
         # KL Divergence between original image classifier output vs generated image classifier output
-        kl_div_loss = torch.kl_div(classifier_op_generated_log_prob, classifier_op_original_prob, reduction = 'batchmean')
+        kl_div_loss = F.kl_div(classifier_op_generated_log_prob, classifier_op_original_prob, reduction = 'batchmean')
 
         return kl_div_loss
 
