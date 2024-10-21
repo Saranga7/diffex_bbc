@@ -1,6 +1,5 @@
 from config import *
 
-from torch.cuda import amp
 
 
 # saranga: not used in our work
@@ -59,7 +58,7 @@ def render_condition(
             cond = model.encode(x_start)
             
             # saranga: concatenate clasifier component and linearly project to form Z_sem
-            if conf.include_classifier:
+            if conf.include_classifier is not False and conf.include_classifier != "no_cat":
                 cond = model.classifier_component(x = x_start, cond = cond) # cond = Z_sem
                 print("classifier included")
                 

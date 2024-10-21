@@ -1,9 +1,6 @@
-import math
 from dataclasses import dataclass
-from numbers import Number
-from typing import NamedTuple, Tuple, Union
+from typing import NamedTuple, Tuple
 
-import numpy as np
 import torch as th
 from torch import nn
 import torch.nn.functional as F
@@ -12,7 +9,7 @@ from config_base import BaseConfig
 from .blocks import *
 
 from .nn import (conv_nd, linear, normalization, timestep_embedding,
-                 torch_checkpoint, zero_module)
+                 zero_module)
 
 
 @dataclass

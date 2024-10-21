@@ -4,17 +4,13 @@ import os
 import re
 
 import numpy as np
-import pandas as pd
 import pytorch_lightning as pl
 import torch
-from numpy.lib.function_base import flip
 # from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import *
-from torch import nn
 from torch.cuda import amp
-from torch.distributions import Categorical
 from torch.optim.optimizer import Optimizer
-from torch.utils.data.dataset import ConcatDataset, TensorDataset
+from torch.utils.data.dataset import TensorDataset
 from torchvision.utils import make_grid, save_image
 
 from config import *
@@ -28,11 +24,7 @@ import wandb
 from wandb import Image
 
 # saranga: add your wandb key here
-wandb.login(key = "280a63fbe206439a036945bcecd7d1f619763c7d")
-from pytorch_lightning.loggers import WandbLogger
-# wandb.init(project="Diffusion_AutoEncoder")
-
-    
+from pytorch_lightning.loggers import WandbLogger    
 
 
 class LitModel(pl.LightningModule):
@@ -460,10 +452,8 @@ class LitModel(pl.LightningModule):
 
      
             # saranga: L2 Norm loss instead of KL Divergence loss
-            if self.conf.include_classifier:
-            
+            if self.conf.include_classifier is not False and self.conf.include_classifier != "no_loss":
                 if self.num_samples >= self.conf.classifier_loss_start_step:
-
                     if self.conf.classifier_loss == 'L2Norm':
                         l2_norm_loss = self._calculate_L2_norm(x_start)
                         annealing_steps = self.conf.annealing_steps  # Define over how many steps to anneal
@@ -472,7 +462,6 @@ class LitModel(pl.LightningModule):
                         wandb.log({"L2Norm_weight": weight}, step = self.num_samples)
 
                         total_loss = loss + weight * l2_norm_loss
-
 
                     # For the second training, I increased the kl_div_loss weight to 0.3. and also reduced the weight of the diffusion loss to be (1 - weight of the kl loss at that step)
 
@@ -488,13 +477,10 @@ class LitModel(pl.LightningModule):
                     
                     else:
                         total_loss = loss
-
                 else:
                     total_loss = loss
-            
             else:
                 total_loss = loss
-            
 
 
             # divide by accum batches to make the accumulated gradient exact!
@@ -1070,7 +1056,6 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = 'train'):
     #                                          version='')
     
     # saranga: modify wandb credentials to your own here
-    wandb.init(project = f"Diffusion_AE_{conf.name}", entity = "saranga7", config = conf.as_dict_jsonable())
     wandb_logger = WandbLogger(name = conf.name, save_dir = conf.logdir)
 
     # from pytorch_lightning.
