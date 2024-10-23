@@ -11,7 +11,7 @@ git clone https://github.com/Saranga7/diffex_bbc.git
 cd diffex_bbc
 
 conda env create -f environment.yml
-conda activate diffae
+conda activate diffex
 ```
 
 ### 1. Classifier training
