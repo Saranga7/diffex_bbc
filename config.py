@@ -1,30 +1,25 @@
-from model.unet import ScaleAt
-from model.latentnet import *
-from diffusion.resample import UniformSampler
-from diffusion.diffusion import space_timesteps
+from multiprocessing import get_context
 from typing import Tuple
 
 from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 
+from choices import *
 from config_base import BaseConfig
 from dataset import *
 from diffusion import *
-from diffusion.base import GenerativeType, LossType, ModelMeanType, ModelVarType, get_named_beta_schedule
+from diffusion.base import (
+    GenerativeType,
+    LossType,
+    ModelMeanType,
+    ModelVarType,
+    get_named_beta_schedule,
+)
+from diffusion.diffusion import space_timesteps
+from diffusion.resample import UniformSampler
 from model import *
-from choices import *
-from multiprocessing import get_context
-import os
-from torch.utils.data.distributed import DistributedSampler
-
-# saranga: modify this when adapting to new dataset
-data_paths = {
-    'ffhqlmdb256':
-    os.path.expanduser('/projects/deepdevpath2/Saranga/DiffaeCLR/datasets/ffhq256.lmdb'),
-
-    # saranga: add the path to BBC dataset here
-    'bbc021_simple':
-    os.path.expanduser('/projects/deepdevpath/Anis/diffusion-comparison-experiments/datasets/bbc021_simple'),
-}
+from model.latentnet import *
+from model.unet import ScaleAt
 
 
 @dataclass
@@ -33,7 +28,7 @@ class PretrainConfig(BaseConfig):
     path: str
 
 
-@dataclass
+@dataclass(kw_only=True)
 class TrainConfig(BaseConfig):
     # random seed
     seed: int = 0
@@ -66,13 +61,13 @@ class TrainConfig(BaseConfig):
     latent_rescale_timesteps: bool = False
     latent_T_eval: int = 1_000
     latent_clip_sample: bool = False
-    latent_beta_scheduler: str = 'linear'
-    beta_scheduler: str = 'linear'
-    data_name: str = ''
+    latent_beta_scheduler: str = "linear"
+    beta_scheduler: str = "linear"
+    data_name: str = ""
     data_val_name: str = None
     diffusion_type: str = None
     dropout: float = 0.1
-    ema_decay: float = 0.9999
+    ema_decay: float = 0.999
     eval_num_images: int = 250
     eval_every_samples: int = 200_000
     eval_ema_every_samples: int = 200_000
@@ -92,7 +87,7 @@ class TrainConfig(BaseConfig):
     net_beatgans_embed_channels: int = 512
     net_resblock_updown: bool = True
     net_enc_use_time: bool = False
-    net_enc_pool: str = 'adaptivenonzero'
+    net_enc_pool: str = "adaptivenonzero"
     net_beatgans_gradient_checkpoint: bool = False
     net_beatgans_resnet_two_cond: bool = False
     net_beatgans_resnet_use_zero_module: bool = True
@@ -126,13 +121,13 @@ class TrainConfig(BaseConfig):
     net_enc_num_cls: int = None
     num_workers: int = 4
     parallel: bool = False
-    postfix: str = ''
+    postfix: str = ""
     sample_size: int = 64
     sample_every_samples: int = 20_000
     save_every_samples: int = 100_000
     style_ch: int = 512
     T_eval: int = 1_000
-    T_sampler: str = 'uniform'
+    T_sampler: str = "uniform"
     T: int = 1_000
     total_samples: int = 10_000_000
     warmup: int = 0
@@ -141,23 +136,23 @@ class TrainConfig(BaseConfig):
     eval_programs: Tuple[str] = None
     # if present load the checkpoint from this path instead
     eval_path: str = None
-    base_dir: str = 'checkpoints'
+    base_dir: str
     use_cache_dataset: bool = False
-    data_cache_dir: str = os.path.expanduser('~/cache')
-    work_cache_dir: str = os.path.expanduser('~/mycache')
+    data_cache_dir: str
+    work_cache_dir: str
     # to be overridden
-    name: str = ''
+    name: str
 
     # saranga: including classifier component
-    include_classifier: bool = True
+    include_classifier: bool | str = True  # bool or "no_loss" or "no_cat"
     classifier_loss_start_step = 0
-    classifier_loss = 'KLDiv'
-    annealing_steps = 10_000 # saranga: number of training steps (data samples) to anneal the classifier loss
-    cls_weight = 0.1 # saranga: weight of the classifier loss
-    # saranga: the path to the classifier model, however in the current implementation, I am not able to pass it to the necessary place. 
-    # so, I define it again in unet_autoenc.py, Ideally, it should be just defined here.
-    classifier_path = '/projects/deepdevpath2/Saranga/diffae_BIO/Classifier/classifier_saved_models/BBC_classifier.pth'
-    
+    classifier_loss = "KLDiv"
+    annealing_steps = 10_000  # saranga: number of training steps (data samples) to anneal the classifier loss
+    cls_weight = 0.1  # saranga: weight of the classifier loss
+
+    # paths
+    classifier_path: str | None
+    data_path: str
 
     def __post_init__(self):
         self.batch_size_eval = self.batch_size_eval or self.batch_size
@@ -179,33 +174,27 @@ class TrainConfig(BaseConfig):
     def fid_cache(self):
         # we try to use the local dirs to reduce the load over network drives
         # hopefully, this would reduce the disconnection problems with sshfs
-        return f'{self.work_cache_dir}/eval_images/{self.data_name}_size{self.img_size}_{self.eval_num_images}'
-
-    @property
-    def data_path(self):
-       # Made changes in this method (removed cached data path)
-        path = data_paths[self.data_name]
-        return path
+        return f"{self.work_cache_dir}/eval_images/{self.data_name}_size{self.img_size}_{self.eval_num_images}"
 
     @property
     def logdir(self):
-        return f'{self.base_dir}/{self.name}'
+        return f"{self.base_dir}/{self.name}"
 
     @property
     def generate_dir(self):
         # we try to use the local dirs to reduce the load over network drives
         # hopefully, this would reduce the disconnection problems with sshfs
-        return f'{self.work_cache_dir}/gen_images/{self.name}'
+        return f"{self.work_cache_dir}/gen_images/{self.name}"
 
     def _make_diffusion_conf(self, T=None):
-        if self.diffusion_type == 'beatgans':
+        if self.diffusion_type == "beatgans":
             # can use T < self.T for evaluation
             # follows the guided-diffusion repo conventions
             # t's are evenly spaced
             if self.beatgans_gen_type == GenerativeType.ddpm:
                 section_counts = [T]
             elif self.beatgans_gen_type == GenerativeType.ddim:
-                section_counts = f'ddim{T}'
+                section_counts = f"ddim{T}"
             else:
                 raise NotImplementedError()
 
@@ -217,8 +206,9 @@ class TrainConfig(BaseConfig):
                 model_var_type=self.beatgans_model_var_type,
                 loss_type=self.beatgans_loss_type,
                 rescale_timesteps=self.beatgans_rescale_timesteps,
-                use_timesteps=space_timesteps(num_timesteps=self.T,
-                                              section_counts=section_counts),
+                use_timesteps=space_timesteps(
+                    num_timesteps=self.T, section_counts=section_counts
+                ),
                 fp16=self.fp16,
             )
         else:
@@ -231,7 +221,7 @@ class TrainConfig(BaseConfig):
         if self.latent_gen_type == GenerativeType.ddpm:
             section_counts = [T]
         elif self.latent_gen_type == GenerativeType.ddim:
-            section_counts = f'ddim{T}'
+            section_counts = f"ddim{T}"
         else:
             raise NotImplementedError()
 
@@ -246,8 +236,9 @@ class TrainConfig(BaseConfig):
             model_var_type=self.latent_model_var_type,
             loss_type=self.latent_loss_type,
             rescale_timesteps=self.latent_rescale_timesteps,
-            use_timesteps=space_timesteps(num_timesteps=self.T,
-                                          section_counts=section_counts),
+            use_timesteps=space_timesteps(
+                num_timesteps=self.T, section_counts=section_counts
+            ),
             fp16=self.fp16,
         )
 
@@ -256,7 +247,7 @@ class TrainConfig(BaseConfig):
         return 3
 
     def make_T_sampler(self):
-        if self.T_sampler == 'uniform':
+        if self.T_sampler == "uniform":
             return UniformSampler(self.T)
         else:
             raise NotImplementedError()
@@ -275,27 +266,28 @@ class TrainConfig(BaseConfig):
         return self._make_latent_diffusion_conf(T=self.latent_T_eval)
 
     # saranga:modify this when adapting to new dataset
-    def make_dataset(self, path=None, split = None):
-        # saranga: BBC dataset
-        if self.data_name == 'bbc021_simple':
-            return BBCDataset(path=path or self.data_path,
-                              img_size=self.img_size, split = split)
-        
+    def make_dataset(self, path=None, split=None):
+        # saranga: BBBC dataset
+        if self.data_name == "bbbc021_simple":
+            return BBBCDataset(
+                path=path or self.data_path, img_size=self.img_size, split=split
+            )
+
         else:
             raise NotImplementedError()
 
-    def make_loader(self,
-                    dataset,
-                    shuffle: bool,
-                    num_worker: bool = None,
-                    drop_last: bool = True,
-                    batch_size: int = None,
-                    parallel: bool = False):
+    def make_loader(
+        self,
+        dataset,
+        shuffle: bool,
+        num_worker: bool = None,
+        drop_last: bool = True,
+        batch_size: int = None,
+        parallel: bool = False,
+    ):
         if parallel and distributed.is_initialized():
             # drop last to make sure that there is no added special indexes
-            sampler = DistributedSampler(dataset,
-                                         shuffle=shuffle,
-                                         drop_last=True)
+            sampler = DistributedSampler(dataset, shuffle=shuffle, drop_last=True)
         else:
             sampler = None
         return DataLoader(
@@ -307,7 +299,7 @@ class TrainConfig(BaseConfig):
             num_workers=num_worker or self.num_workers,
             pin_memory=True,
             drop_last=drop_last,
-            multiprocessing_context=get_context('fork'),
+            multiprocessing_context=get_context("fork"),
         )
 
     def make_model_conf(self):
@@ -334,12 +326,11 @@ class TrainConfig(BaseConfig):
                 use_checkpoint=self.net_beatgans_gradient_checkpoint,
                 use_new_attention_order=False,
                 resnet_two_cond=self.net_beatgans_resnet_two_cond,
-                resnet_use_zero_module=self.
-                net_beatgans_resnet_use_zero_module,
+                resnet_use_zero_module=self.net_beatgans_resnet_use_zero_module,
                 # include_classifier=self.include_classifier,
             )
         elif self.model_name in [
-                ModelName.beatgans_autoenc,
+            ModelName.beatgans_autoenc,
         ]:
             cls = BeatGANsAutoencConfig
             # supports both autoenc and vaeddpm
@@ -395,10 +386,10 @@ class TrainConfig(BaseConfig):
                 use_checkpoint=self.net_beatgans_gradient_checkpoint,
                 use_new_attention_order=False,
                 resnet_two_cond=self.net_beatgans_resnet_two_cond,
-                resnet_use_zero_module=self.
-                net_beatgans_resnet_use_zero_module,
+                resnet_use_zero_module=self.net_beatgans_resnet_use_zero_module,
                 latent_net_conf=latent_net_conf,
                 resnet_cond_channels=self.net_beatgans_resnet_cond_channels,
+                classifier_path=self.classifier_path,
             )
         else:
             raise NotImplementedError(self.model_name)

@@ -1,22 +1,20 @@
-from enum import Enum
-
 import torch
 from torch import Tensor
-from torch.nn.functional import silu
 
+from choices import *
 from Classifier.model import PretrainedClassifier
+
 from .latentnet import *
 from .unet import *
-from choices import *
-from torchvision import models
 
 
 @dataclass
 class BeatGANsAutoencConfig(BeatGANsUNetConfig):
+    classifier_path: str | None = None
     # number of style channels
     enc_out_channels: int = 512
     enc_attn_resolutions: Tuple[int] = None
-    enc_pool: str = 'depthconv'
+    enc_pool: str = "depthconv"
     enc_num_res_block: int = 2
     enc_channel_mult: Tuple[int] = None
     enc_grad_checkpoint: bool = False
@@ -24,39 +22,39 @@ class BeatGANsAutoencConfig(BeatGANsUNetConfig):
 
     def make_model(self):
         return BeatGANsAutoencModel(self)
-    
 
 
-    
 # saranga: classifier component concatenated and linearly projected to form Z_sem
 class Classifier_Component(nn.Module):
-
-    def __init__(self, classifier_checkpoint_path, style_dim, num_classes = 2):
+    def __init__(self, classifier_checkpoint_path, style_dim, num_classes=2):
         super().__init__()
 
-        print("Classifier path:", classifier_checkpoint_path)   
-        self.classifier = PretrainedClassifier(pretrain = True)
-        self.classifier.load_state_dict(torch.load(classifier_checkpoint_path), strict = True)
+        print("Classifier path:", classifier_checkpoint_path)
+        self.classifier = PretrainedClassifier(pretrain=True)
+        self.classifier.load_state_dict(
+            torch.load(classifier_checkpoint_path, map_location="cpu"), strict=True
+        )
 
         # Freeze the classifier
         for param in self.classifier.parameters():
-                param.requires_grad = False
+            param.requires_grad = False
 
         ## We are no longer using batchnorm
         # self.linear_projection = nn.Sequential(
-        #         nn.BatchNorm1d(style_dim + num_classes), 
+        #         nn.BatchNorm1d(style_dim + num_classes),
         #         nn.Linear(style_dim + num_classes, style_dim)
         #     )
 
         self.linear_projection = nn.Linear(style_dim + num_classes, style_dim)
-        
-    def forward(self, x, cond):       
+
+    def forward(self, x, cond):
         logits = self.classifier(x)
-        probabilities = torch.softmax(logits, dim = 1)
+        probabilities = torch.softmax(logits, dim=1)
 
-        cond_class = torch.cat([probabilities, cond], axis = 1) # concatenating W and probabilities
+        cond_class = torch.cat(
+            [probabilities, cond], axis=1
+        )  # concatenating W and probabilities
         return self.linear_projection(cond_class)
-
 
 
 class BeatGANsAutoencModel(BeatGANsUNetModel):
@@ -77,8 +75,9 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
             out_hid_channels=conf.enc_out_channels,
             out_channels=conf.enc_out_channels,
             num_res_blocks=conf.enc_num_res_block,
-            attention_resolutions=(conf.enc_attn_resolutions
-                                   or conf.attention_resolutions),
+            attention_resolutions=(
+                conf.enc_attn_resolutions or conf.attention_resolutions
+            ),
             dropout=conf.dropout,
             channel_mult=conf.enc_channel_mult or conf.channel_mult,
             use_time_condition=False,
@@ -92,12 +91,11 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
             pool=conf.enc_pool,
         ).make_model()
 
-        # print('Classifier path:', conf.classifier_path)
-        
         # saranga: initializing the classifier component
-        classifier_path = "/projects/deepdevpath2/Saranga/diffae_BIO/Classifier/classifier_saved_models/BBC_classifier.pth"
-        self.classifier_component = Classifier_Component(classifier_checkpoint_path = classifier_path, 
-                                                        style_dim = conf.enc_out_channels)
+        self.classifier_component = Classifier_Component(
+            classifier_checkpoint_path=conf.classifier_path,
+            style_dim=conf.enc_out_channels,
+        )
         self.classifier_component.eval()
 
         if conf.latent_net_conf is not None:
@@ -132,8 +130,11 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
 
     @property
     def stylespace_sizes(self):
-        modules = list(self.input_blocks.modules()) + list(
-            self.middle_block.modules()) + list(self.output_blocks.modules())
+        modules = (
+            list(self.input_blocks.modules())
+            + list(self.middle_block.modules())
+            + list(self.output_blocks.modules())
+        )
         sizes = []
         for module in modules:
             if isinstance(module, ResBlock):
@@ -145,8 +146,11 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
         """
         encode to style space
         """
-        modules = list(self.input_blocks.modules()) + list(
-            self.middle_block.modules()) + list(self.output_blocks.modules())
+        modules = (
+            list(self.input_blocks.modules())
+            + list(self.middle_block.modules())
+            + list(self.output_blocks.modules())
+        )
         # (n, c)
         cond = self.encoder.forward(x)
         S = []
@@ -162,17 +166,19 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
         else:
             return S
 
-    def forward(self,
-                x,
-                t,
-                y=None,
-                x_start=None,
-                cond=None,
-                style=None,
-                noise=None,
-                t_cond=None,
-                include_classifier = None,
-                **kwargs):
+    def forward(
+        self,
+        x,
+        t,
+        y=None,
+        x_start=None,
+        cond=None,
+        style=None,
+        noise=None,
+        t_cond=None,
+        include_classifier=None,
+        **kwargs,
+    ):
         """
         Apply the model to an input batch.
 
@@ -192,19 +198,18 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
 
         if cond is None:
             if x is not None:
-                assert len(x) == len(x_start), f'{len(x)} != {len(x_start)}'
+                assert len(x) == len(x_start), f"{len(x)} != {len(x_start)}"
 
             # tmp = self.encode(x_start)
             # cond = tmp['cond']
-            cond = self.encode(x_start) # saranga: this cond is the W space
-
+            cond = self.encode(x_start)  # saranga: this cond is the W space
 
         # saranga: Add classifier here
         if include_classifier is not None:
             # print("\n\nClassifier included")
-            cond = include_classifier(x = x_start, cond = cond) #saranga: this cond is the Z_sem space
-
-
+            cond = include_classifier(
+                x=x_start, cond=cond
+            )  # saranga: this cond is the Z_sem space
 
         if t is not None:
             _t_emb = timestep_embedding(t, self.conf.model_channels)
@@ -263,9 +268,7 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
             k = 0
             for i in range(len(self.input_num_blocks)):
                 for j in range(self.input_num_blocks[i]):
-                    h = self.input_blocks[k](h,
-                                             emb=enc_time_emb,
-                                             cond=enc_cond_emb)
+                    h = self.input_blocks[k](h, emb=enc_time_emb, cond=enc_cond_emb)
 
                     # print(i, j, h.shape)
                     hs[i].append(h)
@@ -293,10 +296,9 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
                     lateral = None
                     # print(i, j, lateral)
 
-                h = self.output_blocks[k](h,
-                                          emb=dec_time_emb,
-                                          cond=dec_cond_emb,
-                                          lateral=lateral)
+                h = self.output_blocks[k](
+                    h, emb=dec_time_emb, cond=dec_cond_emb, lateral=lateral
+                )
                 k += 1
 
         pred = self.out(h)
