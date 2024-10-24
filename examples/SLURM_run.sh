@@ -21,4 +21,4 @@ micromamba deactivate
 micromamba activate diffex
 
 # ----------------------------------------> Run <----------------------------------------
-srun WANDB_MODE=offline python run_bbc.py
+WANDB_MODE=offline srun python path/to/frozen/copy/of/run_bbbc.py

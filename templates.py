@@ -46,7 +46,7 @@ def autoenc_base(
 
 
 # saranga
-def bbc_autoenc_base(
+def bbbc_autoenc_base(
     base_dir: str,
     data_cache_dir: str,
     work_cache_dir: str,
@@ -57,7 +57,7 @@ def bbc_autoenc_base(
     conf = autoenc_base(
         base_dir, data_cache_dir, work_cache_dir, name, data_path, classifier_path
     )
-    conf.data_name = "bbc021_simple"  # name of the dataset, this must be a key present in the data_paths dictionary in dataset.py
+    conf.data_name = "bbbc021_simple"  # name of the dataset, this must be a key present in the data_paths dictionary in dataset.py
     conf.scale_up_gpus(4)
     conf.img_size = 128
     conf.net_ch = 128
@@ -69,7 +69,7 @@ def bbc_autoenc_base(
 
 
 # saranga
-def bbc_autoenc(
+def bbbc_autoenc(
     base_dir: str,
     data_cache_dir: str,
     work_cache_dir: str,
@@ -77,7 +77,7 @@ def bbc_autoenc(
     data_path: str,
     classifier_path: str,
 ):
-    conf = bbc_autoenc_base(
+    conf = bbbc_autoenc_base(
         base_dir, data_cache_dir, work_cache_dir, name, data_path, classifier_path
     )
     conf.total_samples = 9_000_000  # total number of samples to train on, Adjust this to increase or decrease the training time

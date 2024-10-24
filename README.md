@@ -1,14 +1,14 @@
-# Diff-Ex on BBBC021
+# Diff-Ex on BBBBC021
 
-BBBC021 Data Path: /projects/deepdevpath/Anis/diffusion-comparison-experiments/datasets/bbc021_simple
+BBBBC021 Data Path: /projects/deepdevpath/Anis/diffusion-comparison-experiments/datasets/bbbc021_simple
 
 ## Running the trainings
 
 ### 0. Set-up
 
 ```
-git clone https://github.com/Saranga7/diffex_bbc.git
-cd diffex_bbc
+git clone https://github.com/Saranga7/diffex_bbbc.git
+cd diffex_bbbc
 
 conda env create -f environment.yml
 conda activate diffex
@@ -40,24 +40,28 @@ If you are adapting this framework for another dataset, you will need to make ch
 
 ### 2. Diff-Ex training
 
+#### Diff-Ex training on unmanaged cluster
+
 Go back to the parent directory
 
 ```
 cd ..
 ```
 
-Modifications in training steps, name of the model, triggering classifier loss, number of annealing steps, weight of classifier loss, etc. can be made in the `run_bbc.py`, `templates.py`, and `config.py` (for all the hyperparameters). `templates.py` calls the `TrainConfig` class from `config.py` and overrides certain variables. `run_bbc.py` calls the `bbc_autoenc()` configuration and can further override.
+The `examples` folder contains `run_bbbc.py`; copy that example file to the parent repo where you are.
+
+Modifications in training steps, name of the model, triggering classifier loss, number of annealing steps, weight of classifier loss, etc. can be made in the `run_bbbc.py`, `templates.py`, and `config.py` (for all the hyperparameters). `templates.py` calls the `TrainConfig` class from `config.py` and overrides certain variables. `run_bbbc.py` calls the `bbbc_autoenc()` configuration and can further override.
 
 
 Mandatorily, the path of the trained classifier weight has to be assigned to `classifier_path` in `config.py` and also to `classifier_path` inside the `BeatGANsAutoencModel` class that is located in `model/unet_autoenc.py`.
 
-Also change the `wandb` project name and entity, and login credentials to your own wandb account. This is done in `experiment.py`.
+Also change the `wandb` project name and entity, and login credentials to your own wandb account.
 
 
-Run Diff-Ex training on BBBC021 dataset.
+Run Diff-Ex training on BBBBC021 dataset.
 
 ```
-python run_bbc.py
+python run_bbbc.py
 ```
 
 
@@ -67,9 +71,14 @@ After the training is complete, you will find the weights of the the Diff-Ex mod
 
 NOTE:
 
-If you are adapting this framework for another dataset, you will need to make changes in the `dataset.py` script and in `config.py` (in the `make_dataset` method, and `data_paths`). 
+If you are adapting this framework for another dataset, you will need to make changes in the `dataset.py` script and in `config.py` (in the `make_dataset` method). 
 
 
+#### Diff-Ex training on SLURM cluster
+
+The `examples` folder contains another example script `SLURM_run.sh`. Copy that example file to the parent directory.
+
+`SLURM_run.sh` is used to submit a traning to the SLURM manager. Set the SLURM arguments here and call a _frozen copy_ of `run_bbbc.py` (a copy that won't change between the task submission and task launch), for example in the directory `SLURM_launched_configs`.
 
 ## Changes made w.r.t DiffAE
 

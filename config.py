@@ -267,9 +267,9 @@ class TrainConfig(BaseConfig):
 
     # saranga:modify this when adapting to new dataset
     def make_dataset(self, path=None, split=None):
-        # saranga: BBC dataset
-        if self.data_name == "bbc021_simple":
-            return BBCDataset(
+        # saranga: BBBC dataset
+        if self.data_name == "bbbc021_simple":
+            return BBBCDataset(
                 path=path or self.data_path, img_size=self.img_size, split=split
             )
 

@@ -7,8 +7,8 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 
-# saranga: dataset class for the BBBC021 dataset
-class BBCDataset(Dataset):
+# saranga: dataset class for the BBBBC021 dataset
+class BBBCDataset(Dataset):
     def __init__(
         self,
         path,
@@ -129,7 +129,7 @@ class SubsetDataset(Dataset):
 
 
 if __name__ == "__main__":
-    root = "/projects/deepdevpath/Anis/diffusion-comparison-experiments/datasets/bbc021_simple"
-    dataset = BBCDataset(root)
+    root = "/projects/deepdevpath/Anis/diffusion-comparison-experiments/datasets/bbbc021_simple"
+    dataset = BBBCDataset(root)
     print(len(dataset))
     print(dataset[231]["img"].shape)

@@ -15,7 +15,7 @@ from sklearn.metrics import (
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from dataset import BBC_dataset
+from dataset import BBBC_dataset
 from model import PretrainedClassifier_Bin
 
 
@@ -203,14 +203,14 @@ if __name__ == "__main__":
     LR = 3e-4
     IMG_SIZE = 128
 
-    root_path = "/projects/deepdevpath/Anis/diffusion-comparison-experiments/datasets/bbc021_simple"
-    checkpoint_name = "BBC_binary_classifier.pth"
+    root_path = "/projects/deepdevpath/Anis/diffusion-comparison-experiments/datasets/bbbc021_simple"
+    checkpoint_name = "BBBC_binary_classifier.pth"
     device = torch.device(f"cuda:{GPU_INDEX}" if torch.cuda.is_available() else "cpu")
 
     set_seed(SEED)
 
-    train_dataset = BBC_dataset(root=root_path, split="train")
-    test_dataset = BBC_dataset(root=root_path, split="test")
+    train_dataset = BBBC_dataset(root=root_path, split="train")
+    test_dataset = BBBC_dataset(root=root_path, split="test")
 
     train_loader = DataLoader(
         train_dataset,

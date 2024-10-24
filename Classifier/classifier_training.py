@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from config import Config
-from dataset import BBC_dataset
+from dataset import BBBC_dataset
 from model import PretrainedClassifier
 
 
@@ -247,14 +247,14 @@ if __name__ == "__main__":
     LR = cfg.LR
     IMG_SIZE = cfg.IMG_SIZE
 
-    root_path = "/projects/deepdevpath/Anis/diffusion-comparison-experiments/datasets/bbc021_simple"
-    checkpoint_name = "BBC_classifier.pth"
+    root_path = "/projects/deepdevpath/Anis/diffusion-comparison-experiments/datasets/bbbc021_simple"
+    checkpoint_name = "BBBC_classifier.pth"
     device = torch.device(f"cuda:{GPU_INDEX}" if torch.cuda.is_available() else "cpu")
 
     set_seed(SEED)
 
-    train_dataset = BBC_dataset(root=root_path, split="train")
-    test_dataset = BBC_dataset(root=root_path, split="test")
+    train_dataset = BBBC_dataset(root=root_path, split="train")
+    test_dataset = BBBC_dataset(root=root_path, split="test")
 
     train_loader = DataLoader(
         train_dataset,

@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 
-class BBC_dataset(Dataset):
+class BBBC_dataset(Dataset):
     def __init__(self, root, img_size=128, split="train"):
         self.root = root
         # Store image paths
