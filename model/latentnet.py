@@ -3,10 +3,11 @@ from enum import Enum
 from typing import NamedTuple, Tuple
 
 import torch
-from choices import *
-from config_base import BaseConfig
 from torch import nn
 from torch.nn import init
+
+from choices import *
+from config_base import BaseConfig
 
 from .blocks import *
 from .nn import timestep_embedding
@@ -14,9 +15,9 @@ from .unet import *
 
 
 class LatentNetType(Enum):
-    none = 'none'
+    none = "none"
     # injecting inputs into the hidden layers
-    skip = 'skip'
+    skip = "skip"
 
 
 class LatentNetReturn(NamedTuple):
@@ -28,6 +29,7 @@ class MLPSkipNetConfig(BaseConfig):
     """
     default MLP for the latent DPM in the paper!
     """
+
     num_channels: int
     skip_layers: Tuple[int]
     num_hid_channels: int
@@ -51,6 +53,7 @@ class MLPSkipNet(nn.Module):
 
     default MLP for the latent DPM in the paper!
     """
+
     def __init__(self, conf: MLPSkipNetConfig):
         super().__init__()
         self.conf = conf
@@ -102,7 +105,8 @@ class MLPSkipNet(nn.Module):
                     use_cond=cond,
                     condition_bias=conf.condition_bias,
                     dropout=dropout,
-                ))
+                )
+            )
         self.last_act = conf.last_act.get_act()
 
     def forward(self, x, t, **kwargs):
@@ -156,17 +160,13 @@ class MLPLNAct(nn.Module):
         for module in self.modules():
             if isinstance(module, nn.Linear):
                 if self.activation == Activation.relu:
-                    init.kaiming_normal_(module.weight,
-                                         a=0,
-                                         nonlinearity='relu')
+                    init.kaiming_normal_(module.weight, a=0, nonlinearity="relu")
                 elif self.activation == Activation.lrelu:
-                    init.kaiming_normal_(module.weight,
-                                         a=0.2,
-                                         nonlinearity='leaky_relu')
+                    init.kaiming_normal_(
+                        module.weight, a=0.2, nonlinearity="leaky_relu"
+                    )
                 elif self.activation == Activation.silu:
-                    init.kaiming_normal_(module.weight,
-                                         a=0,
-                                         nonlinearity='relu')
+                    init.kaiming_normal_(module.weight, a=0, nonlinearity="relu")
                 else:
                     # leave it as default
                     pass

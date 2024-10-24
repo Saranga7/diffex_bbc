@@ -1,11 +1,10 @@
-from model.unet import ScaleAt
-from model.latentnet import *
-from diffusion.resample import UniformSampler
-from diffusion.diffusion import space_timesteps
+from multiprocessing import get_context
 from typing import Tuple
 
 from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 
+from choices import *
 from config_base import BaseConfig
 from dataset import *
 from diffusion import *
@@ -16,10 +15,12 @@ from diffusion.base import (
     ModelVarType,
     get_named_beta_schedule,
 )
+from diffusion.diffusion import space_timesteps
+from diffusion.resample import UniformSampler
 from model import *
-from choices import *
-from multiprocessing import get_context
-from torch.utils.data.distributed import DistributedSampler
+from model.latentnet import *
+from model.unet import ScaleAt
+
 
 @dataclass
 class PretrainConfig(BaseConfig):
@@ -143,7 +144,7 @@ class TrainConfig(BaseConfig):
     name: str
 
     # saranga: including classifier component
-    include_classifier: bool | str = True # bool or "no_loss" or "no_cat"
+    include_classifier: bool | str = True  # bool or "no_loss" or "no_cat"
     classifier_loss_start_step = 0
     classifier_loss = "KLDiv"
     annealing_steps = 10_000  # saranga: number of training steps (data samples) to anneal the classifier loss

@@ -9,4 +9,3 @@ class Config:
     EPOCHS = 10
     LR = 3e-4
     IMG_SIZE = 128
-

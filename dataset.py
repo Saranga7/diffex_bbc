@@ -1,5 +1,5 @@
-import os
 import glob
+import os
 from pathlib import Path
 
 from PIL import Image
@@ -9,25 +9,27 @@ from torchvision import transforms
 
 # saranga: dataset class for the BBBC021 dataset
 class BBCDataset(Dataset):
-    def __init__(self, path,
-                img_size = 128, 
-                split = None,
-                as_tensor: bool = True,
-                do_augment: bool = True,
-                do_normalize: bool = True):
-    
+    def __init__(
+        self,
+        path,
+        img_size=128,
+        split=None,
+        as_tensor: bool = True,
+        do_augment: bool = True,
+        do_normalize: bool = True,
+    ):
         self.path = path
         # Store image paths
         if split:
             data_path = glob.glob(os.path.join(self.path, split, "*/*"))
         else:
             data_path = glob.glob(os.path.join(self.path, "*/*/*"))
-        
+
         self.data = [path for path in data_path]
-   
+
         # Image transformation
         transform = [
-           transforms.Resize((img_size, img_size)),
+            transforms.Resize((img_size, img_size)),
         ]
 
         if do_augment:
@@ -36,14 +38,13 @@ class BBCDataset(Dataset):
             transform.append(transforms.ToTensor())
         if do_normalize:
             transform.append(
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) 
-                # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) 
-                )
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            )
         self.transform = transforms.Compose(transform)
 
     def __len__(self):
         return len(self.data)
-
 
     def __getitem__(self, index):
         assert index < len(self.data)
@@ -53,8 +54,7 @@ class BBCDataset(Dataset):
         if self.transform:
             img = self.transform(img)
 
-        return {'img': img, 'index': index}
-    
+        return {"img": img, "index": index}
 
 
 class ImageDataset(Dataset):
@@ -62,7 +62,7 @@ class ImageDataset(Dataset):
         self,
         folder,
         image_size,
-        exts=['jpg'],
+        exts=["jpg"],
         do_augment: bool = True,
         do_transform: bool = True,
         do_normalize: bool = True,
@@ -76,13 +76,15 @@ class ImageDataset(Dataset):
         # relative paths (make it shorter, saves memory and faster to sort)
         if has_subdir:
             self.paths = [
-                p.relative_to(folder) for ext in exts
-                for p in Path(f'{folder}').glob(f'**/*.{ext}')
+                p.relative_to(folder)
+                for ext in exts
+                for p in Path(f"{folder}").glob(f"**/*.{ext}")
             ]
         else:
             self.paths = [
-                p.relative_to(folder) for ext in exts
-                for p in Path(f'{folder}').glob(f'*.{ext}')
+                p.relative_to(folder)
+                for ext in exts
+                for p in Path(f"{folder}").glob(f"*.{ext}")
             ]
         if sort_names:
             self.paths = sorted(self.paths)
@@ -96,8 +98,7 @@ class ImageDataset(Dataset):
         if do_transform:
             transform.append(transforms.ToTensor())
         if do_normalize:
-            transform.append(
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
+            transform.append(transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
         self.transform = transforms.Compose(transform)
 
     def __len__(self):
@@ -107,10 +108,10 @@ class ImageDataset(Dataset):
         path = os.path.join(self.folder, self.paths[index])
         img = Image.open(path)
         # if the image is 'rgba'!
-        img = img.convert('RGB')
+        img = img.convert("RGB")
         if self.transform is not None:
             img = self.transform(img)
-        return {'img': img, 'index': index}
+        return {"img": img, "index": index}
 
 
 class SubsetDataset(Dataset):
@@ -127,14 +128,8 @@ class SubsetDataset(Dataset):
         return self.dataset[index]
 
 
-
-
-
-
-
 if __name__ == "__main__":
     root = "/projects/deepdevpath/Anis/diffusion-comparison-experiments/datasets/bbc021_simple"
     dataset = BBCDataset(root)
     print(len(dataset))
-    print(dataset[231]['img'].shape)
-    
+    print(dataset[231]["img"].shape)

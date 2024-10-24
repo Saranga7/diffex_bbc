@@ -1,11 +1,11 @@
-
 import torch
 from torch import Tensor
 
+from choices import *
 from Classifier.model import PretrainedClassifier
+
 from .latentnet import *
 from .unet import *
-from choices import *
 
 
 @dataclass

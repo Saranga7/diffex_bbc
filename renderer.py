@@ -1,16 +1,17 @@
 from config import *
 
 
-
 # saranga: not used in our work
-def render_uncondition(conf: TrainConfig,
-                       model: BeatGANsAutoencModel,
-                       x_T,
-                       sampler: Sampler,
-                       latent_sampler: Sampler,
-                       conds_mean=None,
-                       conds_std=None,
-                       clip_latent_noise: bool = False):
+def render_uncondition(
+    conf: TrainConfig,
+    model: BeatGANsAutoencModel,
+    x_T,
+    sampler: Sampler,
+    latent_sampler: Sampler,
+    conds_mean=None,
+    conds_std=None,
+    clip_latent_noise: bool = False,
+):
     device = x_T.device
     if conf.train_mode == TrainMode.diffusion:
         assert conf.model_type.can_sample()
@@ -40,7 +41,6 @@ def render_uncondition(conf: TrainConfig,
         raise NotImplementedError()
 
 
-
 # saranga: required
 def render_condition(
     conf: TrainConfig,
@@ -56,14 +56,15 @@ def render_condition(
 
         if cond is None:
             cond = model.encode(x_start)
-            
+
             # saranga: concatenate clasifier component and linearly project to form Z_sem
-            if conf.include_classifier is not False and conf.include_classifier != "no_cat":
-                cond = model.classifier_component(x = x_start, cond = cond) # cond = Z_sem
+            if (
+                conf.include_classifier is not False
+                and conf.include_classifier != "no_cat"
+            ):
+                cond = model.classifier_component(x=x_start, cond=cond)  # cond = Z_sem
                 print("classifier included")
-                
-        return sampler.sample(model=model,
-                              noise=x_T,
-                              model_kwargs={'cond': cond})
+
+        return sampler.sample(model=model, noise=x_T, model_kwargs={"cond": cond})
     else:
         raise NotImplementedError()

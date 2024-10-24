@@ -6,3 +6,4 @@ output_logs/*
 **/*.pyc
 run_bbc.py
 SLURM_run.sh
+SLURM_launched_configs
