@@ -20,5 +20,8 @@ eval "$(micromamba shell hook --shell bash)"
 micromamba deactivate
 micromamba activate diffex
 
+# --------------------------------------> Python Path <--------------------------------------
+export PYTHONPATH="${PYTHONPATH}:path/to/project/root"
+
 # ----------------------------------------> Run <----------------------------------------
 WANDB_MODE=offline srun python path/to/frozen/copy/of/run_bbbc.py
