@@ -377,7 +377,17 @@ class LitModel(pl.LightningModule):
             reduction="batchmean",
         )
 
-        return kl_div_loss
+        # training accuracy
+        original_class_labels = torch.argmax(classifier_op_original_prob, dim=1)
+        class_labels_on_generated_img = torch.argmax(classifier_op_generated, dim=1)
+        accuracy = (
+            (original_class_labels == class_labels_on_generated_img)
+            .float()
+            .mean()
+            .item()
+        )
+
+        return kl_div_loss, accuracy
 
     def training_step(self, batch, batch_idx):
         """
@@ -464,7 +474,7 @@ class LitModel(pl.LightningModule):
 
                     # saranga: KL Divergence loss
                     elif self.conf.classifier_loss == "KLDiv":
-                        kl_div_loss = self._calculate_KL(
+                        kl_div_loss, train_accuracy = self._calculate_KL(
                             x_start
                         )  # Assume _calculate_KL calculates your KL divergence
                         annealing_steps = (
@@ -513,6 +523,7 @@ class LitModel(pl.LightningModule):
                             log_data["l2_norm_loss"] = l2_norm_loss.item()
                         elif self.conf.classifier_loss == "KLDiv":
                             log_data["kl_div_loss"] = kl_div_loss.item()
+                            log_data["train_accuracy_on_generated_images"] = train_accuracy
                     # self.logger.experiment.add_scalar('total_loss', total_loss, self.num_samples)
 
                 log_data["total_loss"] = total_loss.item()
