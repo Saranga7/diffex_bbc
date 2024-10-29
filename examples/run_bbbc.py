@@ -1,3 +1,5 @@
+import os
+
 import torch
 
 import wandb
@@ -31,6 +33,8 @@ if __name__ == "__main__":
     conf.include_classifier = True  # Keep this True for the classifier component
     conf.cls_weight = 0.3  # Weight of the classifier loss
 
-    wandb.init(config=conf.as_dict_jsonable(), name=name)
+    wandb_dir = conf.base_dir + "/wandb"
+    os.makedirs(wandb_dir, exist_ok=True)
+    wandb.init(config=conf.as_dict_jsonable(), name=name, dir=wandb_dir)
 
     train(conf, gpus=gpus)
