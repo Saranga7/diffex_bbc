@@ -377,7 +377,17 @@ class LitModel(pl.LightningModule):
             reduction="batchmean",
         )
 
-        return kl_div_loss
+        # training accuracy
+        original_class_labels = torch.argmax(classifier_op_original_prob, dim=1)
+        class_labels_on_generated_img = torch.argmax(classifier_op_generated, dim=1)
+        accuracy = (
+            (original_class_labels == class_labels_on_generated_img)
+            .float()
+            .mean()
+            .item()
+        )
+
+        return kl_div_loss, accuracy
 
     def training_step(self, batch, batch_idx):
         """
@@ -464,7 +474,7 @@ class LitModel(pl.LightningModule):
 
                     # saranga: KL Divergence loss
                     elif self.conf.classifier_loss == "KLDiv":
-                        kl_div_loss = self._calculate_KL(
+                        kl_div_loss, train_accuracy = self._calculate_KL(
                             x_start
                         )  # Assume _calculate_KL calculates your KL divergence
                         annealing_steps = (
@@ -503,15 +513,20 @@ class LitModel(pl.LightningModule):
                 # self.logger.experiment.add_scalar('loss', losses['loss'],
                 #                                   self.num_samples)
 
-                if self.conf.include_classifier:
+                if (
+                    self.conf.include_classifier is not False
+                    and self.conf.include_classifier != "no_loss"
+                ):
                     if self.num_samples >= self.conf.classifier_loss_start_step:
                         if self.conf.classifier_loss == "L2Norm":
                             # self.logger.experiment.add_scalar('l2_norm_loss', l2_norm_loss, self.num_samples)
                             log_data["l2_norm_loss"] = l2_norm_loss.item()
                         elif self.conf.classifier_loss == "KLDiv":
                             log_data["kl_div_loss"] = kl_div_loss.item()
+                            log_data["train_accuracy_on_generated_images"] = train_accuracy
                     # self.logger.experiment.add_scalar('total_loss', total_loss, self.num_samples)
-                    log_data["total_loss"] = total_loss.item()
+
+                log_data["total_loss"] = total_loss.item()
 
                 for key in ["vae", "latent", "mmd", "chamfer", "arg_cnt"]:
                     if key in losses:
@@ -1129,7 +1144,7 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = "train"):
         # important for working with gradient checkpoint
 
         # saranga: when using the concatenated classifier diff-ex, unused_parameters should be set to False
-        if conf.classifier_path:
+        if conf.include_classifier:
             plugins.append(DDPPlugin(find_unused_parameters=False))
         else:
             plugins.append(DDPPlugin(find_unused_parameters=True))
