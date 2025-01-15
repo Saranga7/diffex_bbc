@@ -7,7 +7,7 @@ BBBBC021 Data Path: /projects/deepdevpath/Anis/diffusion-comparison-experiments/
 ### 0. Set-up
 
 ```
-git clone https://github.com/Saranga7/diffex_bbbc.git
+git clone https://github.com/Saranga7/diffex_bbc.git
 cd diffex_bbbc
 
 conda env create -f environment.yml
